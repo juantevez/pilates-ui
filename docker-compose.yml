@@ -1,0 +1,9 @@
+services:
+  web:
+    build: .
+    image: pilates-ui:latest
+    environment:
+      API_URL: ${API_URL:-}
+    ports:
+      - "3000:80"
+    restart: unless-stopped
