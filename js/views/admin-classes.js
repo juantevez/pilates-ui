@@ -10,6 +10,13 @@ import { dateBar, shiftWeekday, statusBadge } from "./admin-common.js";
 export const title = "Clases";
 const LIVE_MS = 15_000;
 
+/** La clase ya empezó (hora local del navegador): no se puede cancelar ni reactivar. */
+function hasStarted(c) {
+  const now = new Date();
+  const hm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  return c.fecha < today() || (c.fecha === today() && hhmm(c.start_time) <= hm);
+}
+
 const firstWeekday = (iso) => (isWeekday(iso) ? iso : shiftWeekday(iso, 1));
 /* Clases ya festejadas: persistido en el navegador para no repetir el festejo al recargar,
    pero sí mostrarlo si la clase se llenó mientras el admin no estaba mirando. */
@@ -82,9 +89,11 @@ export function render(root) {
           </div>
           ${c.cancel_reason ? html`<div class="small muted">${c.cancel_reason}</div>` : ""}
           <div class="slot-actions">
+            ${c.status === "activa" && c.reservados > 0 && c.fecha <= today()
+              ? html`<a class="btn btn-aqua btn-sm" href="/admin/asistencia?fecha=${c.fecha}&clase=${c.id}" data-link>${icons.check} Asistencia</a>` : ""}
             <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${c.id}">Editar</button>
-            ${c.status === "activa" ? html`<button class="btn btn-danger btn-sm" data-action="cancel" data-id="${c.id}">Cancelar</button>` : ""}
-            ${c.status === "cancelada" ? html`<button class="btn btn-primary btn-sm" data-action="reactivate" data-id="${c.id}">Reactivar</button>` : ""}
+            ${c.status === "activa" && !hasStarted(c) ? html`<button class="btn btn-danger btn-sm" data-action="cancel" data-id="${c.id}">Cancelar</button>` : ""}
+            ${c.status === "cancelada" && !hasStarted(c) ? html`<button class="btn btn-primary btn-sm" data-action="reactivate" data-id="${c.id}">Reactivar</button>` : ""}
             ${c.status === "feriado" ? html`<a class="btn btn-ghost btn-sm" href="/admin/cierres" data-link>Ver cierre</a>` : ""}
           </div>
         </div>

@@ -7,8 +7,10 @@ import { dateBar, shiftWeekday, statusBadge } from "./admin-common.js";
 
 export const title = "Asistencia";
 
-export function render(root) {
-  let fecha = today();
+export function render(root, { params }) {
+  // Acceso directo desde el panel de Clases: /admin/asistencia?fecha=AAAA-MM-DD&clase=<id>
+  let fecha = /^\d{4}-\d{2}-\d{2}$/.test(params.get("fecha") ?? "") ? params.get("fecha") : today();
+  let focus = params.get("clase");
   let classes = null;
 
   const attendee = (a) => html`
@@ -26,7 +28,7 @@ export function render(root) {
   const classCard = (c) => {
     const marked = c.alumnos.filter((a) => a.status !== "confirmada").length;
     return html`
-      <article class="card">
+      <article class="card ${c.clase_id === focus ? "focus" : ""}" id="clase-${c.clase_id}">
         <div class="class-top" style="margin-bottom:8px">
           <div>
             <div class="class-time">${hhmm(c.start_time)}<small>a ${hhmm(c.end_time)}</small></div>
@@ -57,17 +59,19 @@ export function render(root) {
     try {
       classes = await api.get("/admin/asistencia", { fecha });
       paint();
+      if (focus) root.querySelector(`#clase-${CSS.escape(focus)}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
       mount(root, errorState(err));
     }
   }
 
-  on(root, "change", "[data-date-input]", (el) => { if (el.value) { fecha = el.value; load(); } });
+  on(root, "change", "[data-date-input]", (el) => { if (el.value) { fecha = el.value; focus = null; load(); } });
   on(root, "click", "[data-action]", async (el) => {
     const action = el.dataset.action;
     if (action === "retry") return load();
     if (action === "prev-day" || action === "next-day") {
       fecha = shiftWeekday(fecha, action === "prev-day" ? -1 : 1);
+      focus = null;
       return load();
     }
     if (action === "mark") {
