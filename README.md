@@ -38,8 +38,8 @@ El backend debe permitir el origen del front en `CORS_ORIGINS` (por defecto `htt
 | `/reservar` | alumno | Grilla del siguiente día hábil con lugares en vivo (refresco cada 30 s). Permite reservar, cancelar y anotarse en lista de espera. Muestra la cuenta regresiva a la apertura de las 20:00 y el aviso de día cerrado |
 | `/mis-turnos` | alumno | Próximas clases e historial, con su estado (asistió, ausente, cancelada por el estudio…) |
 | `/calendario` | alumno | Calendario mensual con feriados y cierres |
-| `/admin/clases` | admin | Panel del día: anillo con la ocupación total y una tarjeta por clase con un anillo dividido en tantos segmentos como lugares, que se pintan en verde agua con cada reserva. Se actualiza en vivo cada 15 s, con animación y aviso por cada reserva nueva. Cuando una clase se completa, festeja con papel picado multicolor. Permite editar capacidad e instructor, cancelar con motivo, **reactivar** una clase cancelada y generar la grilla |
-| `/admin/asistencia` | admin | Check-in: marcar asistió / ausente por alumno |
+| `/admin/clases` | admin | Panel del día: anillo con la ocupación total y una tarjeta por clase con un anillo dividido en tantos segmentos como lugares, que se pintan en verde agua con cada reserva. Se actualiza en vivo cada 15 s, con animación y aviso por cada reserva nueva. Cuando una clase se completa, festeja con papel picado multicolor. Permite editar capacidad e instructor, cancelar con motivo, **reactivar** una clase cancelada y generar la grilla. Botón **Asistencia** por clase (desde el día de la clase) |
+| `/admin/asistencia` | admin | Check-in: marcar asistió / ausente por alumno. Acepta `?fecha=AAAA-MM-DD&clase=<id>` para abrir y resaltar una clase |
 | `/admin/cierres` | admin | Calendario de cierres: un click en un día lo cierra, edita o reabre. Permite cargar rangos (vacaciones). Los días seguidos se agrupan y se **reabren** de una sola vez |
 | `/admin/usuarios` | admin | Búsqueda, estadísticas de asistencia, bloqueo y desbloqueo |
 

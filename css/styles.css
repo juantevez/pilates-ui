@@ -156,6 +156,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn-danger:hover:not(:disabled) { border-color: var(--danger); }
 .btn-accent { background: var(--accent-soft); color: var(--accent); }
 .btn-accent:hover:not(:disabled) { border-color: var(--accent); }
+.btn-aqua { background: var(--aqua-soft); color: var(--aqua-text); }
+.btn-aqua:hover:not(:disabled) { border-color: var(--aqua-2); }
 .btn-sm { min-height: 34px; padding: 0 12px; font-size: .84rem; }
 .btn-block { width: 100%; }
 .btn-icon { min-height: 38px; width: 38px; padding: 0; }
@@ -301,6 +303,7 @@ button.cal-day:hover { border-color: var(--primary); }
 }
 
 /* Asistencia */
+.card.focus { border-color: var(--aqua-2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--aqua-2) 45%, transparent), var(--shadow); }
 .attendee { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .attendee:last-child { border-bottom: 0; }
 .avatar {
