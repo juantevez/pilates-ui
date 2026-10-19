@@ -48,6 +48,7 @@ export function render(root) {
   mount(root, html`
     <div class="page-head">
       <div><h1>Alumnos</h1><p class="muted">Asistencia, ausencias y bloqueo de cuentas.</p></div>
+      <button class="btn btn-primary" data-action="create">${icons.plus} Nuevo alumno</button>
     </div>
     <div class="card stack">
       <div class="form-row">
@@ -81,6 +82,20 @@ export function render(root) {
     const action = el.dataset.action;
     if (action === "retry") return load();
     if (action === "more") return load({ append: true });
+    if (action === "create") {
+      const values = await dialog({
+        title: "Nuevo alumno",
+        message: "Le llega un email para definir su contraseña (el enlace vale 72 horas).",
+        fields: [
+          { name: "full_name", label: "Nombre y apellido", required: true },
+          { name: "email", label: "Email", type: "email", required: true },
+        ],
+        submitText: "Crear alumno",
+        onSubmit: (v) => api.post("/admin/usuarios", { full_name: v.full_name, email: v.email }),
+      });
+      if (values) { toast(`Alumno creado. Le enviamos el email a ${values.email}.`, "success"); load(); }
+      return;
+    }
     const u = find(el.dataset.id);
     if (action === "block") {
       const values = await dialog({
