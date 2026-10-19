@@ -1,7 +1,9 @@
 import { html } from "../html.js";
+import { themeToggle } from "../theme.js";
 
 export const authCard = (content) => html`
   <div class="auth">
+    <div class="auth-theme">${themeToggle()}</div>
     <div class="card auth-card">
       <a href="/" data-link class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Pilates Studio</span></a>
       ${content}

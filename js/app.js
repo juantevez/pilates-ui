@@ -1,6 +1,7 @@
 import { html, mount } from "./html.js";
 import { icons } from "./icons.js";
 import { session } from "./session.js";
+import { cycleTheme, themeToggle } from "./theme.js";
 import { toast } from "./ui.js";
 
 import * as login from "./views/login.js";
@@ -80,6 +81,7 @@ function renderChrome(path) {
   mount(document.getElementById("tabbar"), items.map(link));
   mount(document.getElementById("user-menu"), html`
     <span class="user-name">${session.user.full_name}</span>
+    ${themeToggle()}
     <button class="btn btn-ghost btn-sm" data-logout title="Cerrar sesión">${icons.logout}<span class="sr-only">Salir</span></button>`);
 }
 
@@ -113,6 +115,7 @@ document.addEventListener("click", (ev) => {
     ev.preventDefault();
     navigate(a.pathname + a.search);
   }
+  if (ev.target.closest("[data-theme-toggle]")) cycleTheme();
   if (ev.target.closest("[data-logout]")) {
     manualLogout = true;
     session.logout();
