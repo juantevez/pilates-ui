@@ -1,3 +1,4 @@
+import { api } from "./api.js";
 import { html, mount } from "./html.js";
 import { icons } from "./icons.js";
 import { session } from "./session.js";
@@ -118,7 +119,9 @@ document.addEventListener("click", (ev) => {
   if (ev.target.closest("[data-theme-toggle]")) cycleTheme();
   if (ev.target.closest("[data-logout]")) {
     manualLogout = true;
-    session.logout();
+    // Revoca la sesión en el servidor (el token deja de servir aunque alguien lo haya copiado).
+    // Si falla (sin conexión, token ya vencido), igual se cierra la sesión local.
+    api.post("/auth/logout").catch(() => {}).finally(() => session.logout());
   }
 });
 
