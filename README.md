@@ -16,6 +16,8 @@ API_URL=https://api.mi-estudio.com docker compose up -d --build
 
 El contenedor genera `config.js` al arrancar. Si `API_URL` no está definida, el front usa el mismo host desde el que se abrió la página, en el puerto 8000. Por eso funciona igual desde `localhost` que desde otro dispositivo de la red (ej. `http://192.168.0.2:3000` en el teléfono).
 
+También genera la **Content-Security-Policy**: sólo scripts propios (ni inline ni de terceros) y conexiones al mismo origen y a la API (`connect-src` sale de `API_URL`). Si agregás un script, una fuente o un servicio externo, hay que sumarlo en `docker/40-write-config.sh`.
+
 ### Acceso desde el teléfono (misma red Wi-Fi)
 
 1. En el `.env` del backend, agregá el origen en `CORS_ORIGINS` (ej. `http://localhost:3000,http://192.168.0.2:3000`). Opcionalmente, poné `FRONTEND_URL=http://192.168.0.2:3000` para que los links de los emails abran en el teléfono.
@@ -49,6 +51,8 @@ El backend debe permitir el origen del front en `CORS_ORIGINS` (por defecto `htt
 index.html            Shell (topbar desktop, tabbar mobile, toasts, <dialog>)
 config.js             URL de la API (runtime)
 css/styles.css        Tokens de diseño, modo oscuro automático, layout responsive
+css/fonts.css         Inter y Fraunces servidas localmente (archivos en fonts/, licencia OFL)
+js/theme-init.js      Aplica el tema antes de pintar (archivo aparte: la CSP no admite scripts inline)
 js/app.js             Router (History API) y guards por rol
 js/api.js             Cliente fetch: JWT y errores {error, detail}. Un 401 cierra la sesión
 js/session.js         Store reactivo de sesión (localStorage + suscriptores)

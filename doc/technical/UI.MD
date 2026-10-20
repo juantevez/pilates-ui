@@ -48,7 +48,7 @@ SPA (*single page application*) para alumnos y recepción del estudio:
 | Vista | Templates propios con *tagged templates* y escape automático (`js/html.js`) |
 | Estilos | Un solo CSS con *design tokens* en variables CSS, tema claro y oscuro |
 | Gráficos | SVG (anillos de ocupación) y canvas (papel picado) generados a mano |
-| Tipografía | Inter (texto) y Fraunces (títulos), desde Google Fonts |
+| Tipografía | Inter (texto) y Fraunces (títulos), servidas desde el mismo nginx (`fonts/`, licencia OFL) |
 | Servidor | nginx 1.27 (Docker) o `scripts/dev_server.py` en desarrollo |
 
 ---
@@ -82,8 +82,8 @@ docker compose up -d --build                                   # http://localhos
 API_URL=https://api.mi-estudio.com docker compose up -d --build # API en otro dominio
 ```
 
-- **Imagen:** `nginx:1.27-alpine`. Copia `index.html`, `config.js`, `css/` y `js/` a `/usr/share/nginx/html`.
-- **`docker/40-write-config.sh`** corre al arrancar el contenedor y genera `config.js`:
+- **Imagen:** `nginx:1.27-alpine`. Copia `index.html`, `config.js`, `css/`, `js/` y `fonts/` a `/usr/share/nginx/html`.
+- **`docker/40-write-config.sh`** corre al arrancar el contenedor y genera `config.js` y los encabezados de seguridad (`/etc/nginx/security-headers.inc`, con la CSP; ver [§17](#17-seguridad)):
   - Si `API_URL` está definida, la usa tal cual.
   - Si no, la API se busca en **el mismo host desde el que se abrió la página, puerto 8000**. Por eso funciona igual desde `localhost` que desde un teléfono en la red local (`http://192.168.0.2:3000` → API en `http://192.168.0.2:8000`).
 - **`docker/nginx.conf`:**
@@ -94,7 +94,8 @@ API_URL=https://api.mi-estudio.com docker compose up -d --build # API en otro do
   | `config.js` con `Cache-Control: no-store` | Se regenera en cada arranque; nunca cachearlo |
   | `*.css`, `*.js` con `Cache-Control: no-cache` | El navegador revalida en cada carga, así un deploy se ve enseguida sin versionar los archivos |
   | `gzip` para CSS, JS y SVG | Menos bytes |
-  | `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY` | Encabezados de seguridad básicos |
+  | `/fonts/` con `Cache-Control: public, max-age=2592000` | Las fuentes casi nunca cambian (30 días) |
+  | `include /etc/nginx/security-headers.inc` | CSP, `X-Content-Type-Options`, `Referrer-Policy` y `X-Frame-Options: DENY`. Se incluye en el `server` y en cada `location` que define sus propios `add_header`, porque nginx no los hereda en ese caso |
 
 ### 2.2 Desarrollo sin Docker
 
@@ -117,10 +118,13 @@ Es un servidor estático de la biblioteca estándar. Si la ruta pedida no existe
 index.html            Shell: topbar (desktop), tabbar (mobile), contenedor de toasts y <dialog>
 config.js             URL de la API (runtime)
 css/styles.css        Tokens, tema claro/oscuro, layout y componentes
+css/fonts.css         @font-face de Inter y Fraunces (archivos en fonts/)
+fonts/                Fuentes variables woff2 (latin y latin-ext) y sus licencias OFL
 js/
 ├── app.js            Router (History API), guards por rol, chrome (navegación), arranque
 ├── api.js            Cliente fetch: base URL, JWT, errores {error, detail}, 401 → logout
 ├── session.js        Store reactivo de sesión (localStorage + suscriptores)
+├── theme-init.js     Script clásico del <head>: aplica el tema antes de pintar
 ├── theme.js          Tema Sistema / Claro / Oscuro
 ├── html.js           Templates con escape automático (html``, raw, mount)
 ├── ui.js             Toasts, diálogo modal, estados de carga/vacío/error, delegación de eventos
@@ -198,7 +202,7 @@ sequenceDiagram
     participant API
 
     B->>I: GET /mis-turnos (nginx devuelve index.html)
-    I->>I: script inline: aplica el tema antes de pintar
+    I->>I: js/theme-init.js: aplica el tema antes de pintar
     I->>I: config.js → window.APP_CONFIG.apiUrl
     I->>A: <script type="module" src="/js/app.js">
     A->>A: session.js lee localStorage (descarta tokens vencidos)
@@ -214,7 +218,7 @@ sequenceDiagram
 
 Puntos importantes:
 
-- **El tema se aplica antes del primer pintado.** El script inline del `<head>` lee `pilates.theme` y pone `data-theme`, así no hay destello claro en modo oscuro.
+- **El tema se aplica antes del primer pintado.** `js/theme-init.js`, un script clásico y bloqueante del `<head>`, lee `pilates.theme` y pone `data-theme`, así no hay destello claro en modo oscuro.
 - **`render()` es idempotente.** Se llama al arrancar, en cada navegación, en `popstate` (atrás/adelante) y cada vez que cambia la sesión.
 - **Cleanup.** Antes de pintar la vista nueva se ejecuta la función que devolvió la anterior. Así se cortan los timers de refresco de `/reservar` y `/admin/clases` al salir.
 - **Errores no capturados de una vista** se muestran en un toast, sin romper la app.
@@ -587,7 +591,7 @@ Los timers se cortan en el *cleanup* de la vista al navegar a otra pantalla.
   - Se pone `data-theme="light|dark"` en `<html>` y `:root[data-theme="dark"]` redefine los tokens.
   - Se actualiza el `<meta name="theme-color">`, que es el color de la barra del navegador en el teléfono.
 - **En vivo:** si la preferencia es "Sistema" y el sistema operativo cambia de modo, se actualiza sin recargar.
-- **Antes del primer pintado:** el script inline de `index.html` aplica el tema, para evitar el destello.
+- **Antes del primer pintado:** `js/theme-init.js` aplica el tema, para evitar el destello. Es un archivo y no un script inline para que la CSP pueda prohibir los scripts inline.
 
 ### 13.3 Layout
 
@@ -640,7 +644,7 @@ Los timers se cortan en el *cleanup* de la vista al navegar a otra pantalla.
 | Clave (`localStorage`) | Contenido | Quién la usa |
 |---|---|---|
 | `pilates.session` | `{ token, user }` | `session.js` |
-| `pilates.theme` | `light` o `dark`. No existe si se eligió "Sistema" | `theme.js` y el script inline de `index.html` |
+| `pilates.theme` | `light` o `dark`. No existe si se eligió "Sistema" | `theme.js` y `theme-init.js` |
 | `pilates.admin.celebrated` | Ids de las clases ya festejadas (las últimas 300) | `admin-classes.js` |
 
 Todos los accesos están dentro de `try/catch`. En modo privado o con el almacenamiento bloqueado, la app funciona igual, sólo que la sesión y el tema viven en memoria hasta que se cierra la pestaña.
@@ -654,6 +658,18 @@ Todos los accesos están dentro de `try/catch`. En modo privado o con el almacen
 - **Logout real:** "Salir" revoca la sesión en el servidor (`POST /auth/logout`), así que un token copiado deja de servir.
 - **401 → logout:** si el backend revoca la sesión (logout desde la API, contraseña restablecida, cuenta bloqueada), la próxima llamada saca al usuario de la app.
 - **Open redirect:** `next` sólo acepta rutas internas (`/…`, no `//…`).
+- **Content-Security-Policy:** la genera `docker/40-write-config.sh` al arrancar, porque `connect-src` depende de `API_URL`:
+
+  | Directiva | Valor | Por qué |
+  |---|---|---|
+  | `script-src` | `'self'` | Ni scripts inline ni de terceros: aunque se colara HTML, no se ejecuta código inyectado. Es la defensa principal |
+  | `style-src` | `'self' 'unsafe-inline'` | Los templates usan atributos `style="…"` con valores calculados (anillos, barras de cupo) |
+  | `connect-src` | `'self'` + el origen de `API_URL` | Sin `API_URL`: `http://*:8000 https://*:8000`, porque el host depende de desde dónde se abra (localhost, IP de la red) |
+  | `font-src` / `img-src` | `'self'` / `'self' data:` | Fuentes locales; el favicon es un SVG `data:` |
+  | `object-src`, `base-uri`, `form-action`, `frame-ancestors` | `'none'`, `'self'`, `'self'`, `'none'` | Sin plugins, sin `<base>` ajeno, formularios sólo al mismo origen, no se puede embeber |
+
+  Se verifica sin herramientas: un `<script>` inline inyectado desde la consola no se ejecuta y dispara `securitypolicyviolation`.
+- **Sin terceros:** las fuentes se sirven desde el mismo nginx, así que el navegador no le pide nada a otro dominio salvo a la API.
 - **Encabezados de nginx:**
   - `X-Frame-Options: DENY`, que impide meter la app en un iframe (*clickjacking*).
   - `X-Content-Type-Options: nosniff`.
@@ -699,8 +715,7 @@ Ordenadas por impacto estimado.
 2. **"Agregar alumno" carga hasta 200 alumnos activos.** Con más alumnos, los que quedan afuera no aparecen en el selector. *Mejora:* un selector con búsqueda que use `GET /admin/usuarios?search=`.
 3. **Hora del navegador.** Algunas decisiones visuales usan el reloj y la zona del dispositivo: ocultar las clases de hoy que ya empezaron, y mostrar u ocultar Cancelar/Reactivar y los botones de asistencia (`hasStarted`, `hasEnded`). Con un reloj o una zona horaria distintos al del estudio, un botón puede aparecer o desaparecer antes de tiempo. El backend igual valida y responde con el error correspondiente. *Mejora:* que la API devuelva esos flags o la hora del servidor.
 4. **Polling en lugar de push.** 30 s (alumno) y 15 s (admin) alcanzan para el volumen del estudio, pero hay un retraso y consultas aunque no cambie nada. *Mejora:* Server-Sent Events desde el backend si el volumen crece.
-5. **Sin Content-Security-Policy.** nginx no manda CSP, y hay un script inline (el del tema) más fuentes de Google. *Mejora:* mover el script del tema a un archivo, servir las fuentes localmente y agregar una CSP estricta (`default-src 'self'`, más el origen de la API en `connect-src`).
-6. **Fuentes desde Google Fonts.** Dependencia externa: si no hay conexión a Google, se usan las fuentes del sistema, y el navegador le pide las fuentes a un tercero. *Mejora:* servirlas desde el mismo nginx.
-7. **Sin modo offline ni PWA.** No hay *service worker* ni manifiesto, así que no se puede "instalar" en el teléfono ni ver los turnos sin conexión. *Mejora:* un manifiesto con un service worker que cachee el shell y la última respuesta de "Mis turnos".
-8. **Mensaje genérico al perder la sesión.** Cualquier 401 muestra "Tu sesión expiró", aunque la causa sea una sesión revocada (contraseña restablecida o cuenta bloqueada). *Mejora:* distinguir por `ApiError.code` (`session_revoked`).
-9. **Sin versionado de assets.** Se resolvió con `Cache-Control: no-cache`, que obliga a revalidar en cada carga. Con muchos usuarios convendría poner un hash en los nombres de archivo y cachear por mucho tiempo, pero eso requiere un paso de build.
+5. **`style-src 'unsafe-inline'` en la CSP.** Los templates usan atributos `style` con valores calculados. Un estilo inyectado no ejecuta código, pero podría desfigurar la página. *Mejora:* pasar esos valores por clases o por CSSOM (`el.style.width = …`, que la CSP permite) y sacar `'unsafe-inline'`.
+6. **Sin modo offline ni PWA.** No hay *service worker* ni manifiesto, así que no se puede "instalar" en el teléfono ni ver los turnos sin conexión. *Mejora:* un manifiesto con un service worker que cachee el shell y la última respuesta de "Mis turnos".
+7. **Mensaje genérico al perder la sesión.** Cualquier 401 muestra "Tu sesión expiró", aunque la causa sea una sesión revocada (contraseña restablecida o cuenta bloqueada). *Mejora:* distinguir por `ApiError.code` (`session_revoked`).
+8. **Sin versionado de assets.** Se resolvió con `Cache-Control: no-cache`, que obliga a revalidar en cada carga. Con muchos usuarios convendría poner un hash en los nombres de archivo y cachear por mucho tiempo, pero eso requiere un paso de build.

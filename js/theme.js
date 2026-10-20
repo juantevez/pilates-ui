@@ -1,5 +1,5 @@
 // Tema claro/oscuro: preferencia del usuario (sistema | claro | oscuro) persistida en localStorage.
-// El script inline de index.html aplica el tema antes del primer pintado; este módulo lo mantiene.
+// js/theme-init.js aplica el tema antes del primer pintado; este módulo lo mantiene.
 
 import { html } from "./html.js";
 import { icons } from "./icons.js";
