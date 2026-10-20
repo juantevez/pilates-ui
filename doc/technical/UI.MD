@@ -49,7 +49,7 @@ SPA (*single page application*) para alumnos y recepción del estudio:
 | Estilos | Un solo CSS con *design tokens* en variables CSS, tema claro y oscuro |
 | Gráficos | SVG (anillos de ocupación) y canvas (papel picado) generados a mano |
 | Tipografía | Inter (texto) y Fraunces (títulos), servidas desde el mismo nginx (`fonts/`, licencia OFL) |
-| Servidor | nginx 1.27 (Docker) o `scripts/dev_server.py` en desarrollo |
+| Servidor | nginx 1.30 (Docker) o `scripts/dev_server.py` en desarrollo |
 
 ---
 
@@ -82,7 +82,7 @@ docker compose up -d --build                                   # http://localhos
 API_URL=https://api.mi-estudio.com docker compose up -d --build # API en otro dominio
 ```
 
-- **Imagen:** `nginx:1.27-alpine`. Copia `index.html`, `config.js`, `css/`, `js/` y `fonts/` a `/usr/share/nginx/html`.
+- **Imagen:** `nginx:1.30-alpine` (rama estable) con `apk upgrade` al construir. Copia `index.html`, `config.js`, `css/`, `js/` y `fonts/` a `/usr/share/nginx/html`.
 - **`docker/40-write-config.sh`** corre al arrancar el contenedor y genera `config.js` y los encabezados de seguridad (`/etc/nginx/security-headers.inc`, con la CSP; ver [§17](#17-seguridad)):
   - Si `API_URL` está definida, la usa tal cual.
   - Si no, la API se busca en **el mismo host desde el que se abrió la página, puerto 8000**. Por eso funciona igual desde `localhost` que desde un teléfono en la red local (`http://192.168.0.2:3000` → API en `http://192.168.0.2:8000`).
