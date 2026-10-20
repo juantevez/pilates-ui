@@ -238,6 +238,7 @@ textarea.input { min-height: 88px; resize: vertical; }
 .spots-dots.full span.taken { background: var(--accent); border-color: var(--accent); }
 .class-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
 .class-actions .btn { flex: 1; }
+.class-actions > p { flex-basis: 100%; margin: 0; }
 
 /* Ocupación */
 .meter { height: 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }

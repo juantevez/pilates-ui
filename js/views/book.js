@@ -29,11 +29,12 @@ function classActions(c) {
       : html`<p class="small muted">Ya no se puede cancelar (menos de 1 h para la clase).</p>`;
   }
   if (c.en_lista_espera) {
-    return html`<button class="btn btn-ghost" data-action="leave-waitlist" data-id="${c.clase_id}">Salir de la lista de espera</button>`;
+    return html`<p class="small muted">Si se libera un lugar, te lo reservamos automáticamente.</p>
+      <button class="btn btn-ghost" data-action="leave-waitlist" data-id="${c.clase_id}">Salir de la lista de espera</button>`;
   }
   if (c.puede_reservar) return html`<button class="btn btn-primary" data-action="book" data-id="${c.clase_id}">Reservar</button>`;
   if (c.puede_anotarse_lista_espera) {
-    return html`<button class="btn btn-accent" data-action="join-waitlist" data-id="${c.clase_id}">Avisame si se libera</button>`;
+    return html`<button class="btn btn-accent" data-action="join-waitlist" data-id="${c.clase_id}">Anotarme en la lista de espera</button>`;
   }
   return "";
 }
@@ -152,7 +153,7 @@ export function render(root) {
         return;
       }
       case "join-waitlist":
-        return act(el, () => api.post(`/clases/${id}/lista-espera`), "Te avisaremos por email si se libera un lugar.");
+        return act(el, () => api.post(`/clases/${id}/lista-espera`), "Estás en la lista de espera: si se libera un lugar, te lo reservamos y te avisamos por email.");
       case "leave-waitlist":
         return act(el, () => api.del(`/clases/${id}/lista-espera`), "Saliste de la lista de espera.");
     }

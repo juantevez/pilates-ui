@@ -92,7 +92,7 @@ export function render(root, { params }) {
       const a = c.alumnos.find((x) => x.turno_id === el.dataset.id);
       const values = await dialog({
         title: `Cancelar el turno de ${a.full_name}`,
-        message: `Clase de las ${hhmm(c.start_time)}. Le llega un email avisándole y se libera el lugar para la lista de espera.`,
+        message: `Clase de las ${hhmm(c.start_time)}. Le llega un email avisándole y el lugar pasa al primero de la lista de espera.`,
         fields: [{ name: "motivo", label: "Motivo (opcional)", type: "textarea", placeholder: "Ej: pidió cambiar de horario" }],
         submitText: "Cancelar turno",
         cancelText: "Volver",
